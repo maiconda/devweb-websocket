@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Chat HTTP Polling</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="chat-container">
+        <div id="messages" class="messages"></div>
+        <div class="input-area">
+            <input type="text" id="username" placeholder="Seu nome" required>
+            <input type="text" id="messageInput" placeholder="Digite sua mensagem">
+            <button onclick="sendMessage()">Enviar</button>
+        </div>
+    </div>
+
+    <script>
+        const messagesDiv = document.getElementById('messages');
+        const usernameInput = document.getElementById('username');
+        const messageInput = document.getElementById('messageInput');
+        let lastMessageId = 0;
+
+        // Função para buscar novas mensagens
+        function fetchMessages() {
+            fetch(`/messages?lastId=${lastMessageId}`)
+                .then(response => response.json())
+                .then(newMessages => {
+                    newMessages.forEach(message => {
+                        addMessage(message);
+                        lastMessageId = Math.max(lastMessageId, message.id);
+                    });
+                });
+        }
+
+        // Polling a cada 2 segundos
+        setInterval(fetchMessages, 2000);
+
+        function sendMessage() {
+            const username = usernameInput.value.trim();
+            const messageText = messageInput.value.trim();
+
+            if (username && messageText) {
+                const message = { username, text: messageText };
+
+                fetch('/messages', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(message)
+                })
+                .then(response => response.json())
+                .then(sentMessage => {
+                    addMessage(sentMessage);
+                    messageInput.value = '';
+                });
+            }
+        }
+
+        function addMessage(message) {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message');
+            messageElement.innerHTML = `
+                <strong>${message.username}</strong>
+                <span>${message.text}</span>
+                <small>${message.timestamp || new Date().toLocaleString()}</small>
+            `;
+            messagesDiv.appendChild(messageElement);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+    </script>
+</body>
+</html>

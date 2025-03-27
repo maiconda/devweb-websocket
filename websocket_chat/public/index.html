@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Chat WebSocket</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="chat-container">
+        <div id="messages" class="messages"></div>
+        <div class="input-area">
+            <input type="text" id="username" placeholder="Seu nome" required>
+            <input type="text" id="messageInput" placeholder="Digite sua mensagem">
+            <button onclick="sendMessage()">Enviar</button>
+        </div>
+    </div>
+
+    <script>
+        const messagesDiv = document.getElementById('messages');
+        const usernameInput = document.getElementById('username');
+        const messageInput = document.getElementById('messageInput');
+        const socket = new WebSocket('ws://localhost:3000');
+
+        socket.onmessage = (event) => {
+            const message = JSON.parse(event.data);
+            
+            if (message.type === 'history') {
+                message.messages.forEach(msg => addMessage(msg));
+            } else {
+                addMessage(message);
+            }
+        };
+
+        function sendMessage() {
+            const username = usernameInput.value.trim();
+            const messageText = messageInput.value.trim();
+
+            if (username && messageText) {
+                const message = {
+                    username,
+                    text: messageText,
+                    timestamp: new Date().toLocaleString()
+                };
+
+                socket.send(JSON.stringify(message));
+                messageInput.value = '';
+            }
+        }
+
+        function addMessage(message) {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message');
+            messageElement.innerHTML = `
+                <strong>${message.username}</strong>
+                <span>${message.text}</span>
+                <small>${message.timestamp}</small>
+            `;
+            messagesDiv.appendChild(messageElement);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+    </script>
+</body>
+</html>
